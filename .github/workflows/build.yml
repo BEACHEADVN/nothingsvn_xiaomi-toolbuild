@@ -64,6 +64,7 @@ jobs:
       - name: Install Stuff
         run: |
           sudo bash setup.sh
+          pip3 install requests beautifulsoup4
 
       - name: Start Notify
         run: |
