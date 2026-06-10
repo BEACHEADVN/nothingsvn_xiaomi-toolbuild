@@ -16,6 +16,15 @@ on:
 jobs:
   Initialize:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        device: [myron, socrates]
+        region: [China, EEA]
+        exclude:
+          - device: socrates
+            region: EEA
+      fail-fast: false
+    name: Build ROM (${{ matrix.device }} - ${{ matrix.region }})
     env:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
