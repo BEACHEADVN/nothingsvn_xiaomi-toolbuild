@@ -211,10 +211,19 @@ jobs:
               f.write(f"AUTO_INPUT_URL={high_speed_url}\n")
               f.write(f"ROM_FILE={package_name}\n")
           EOF
+          
       - name: Build ROM...
         env:
-          INPUT_URL: ${{ inputs.input_url }}
+          # Ưu tiên link nhập thủ công (inputs), nếu trống sẽ tự lấy link cào tự động (env)
+          INPUT_URL: ${{ inputs.input_url || env.AUTO_INPUT_URL }}
         run: |
+          if [ -z "$INPUT_URL" ]; then
+            echo "❌ LỖI: Không tìm thấy URL của ROM từ cả nguồn nhập thủ công lẫn tự động!"
+            exit 1
+          fi
+          
+          echo "🚀 Khởi chạy build với URL: $INPUT_URL"
+          export PATH="$GITHUB_WORKSPACE/android-sdk/build-tools/34.0.0:$PATH"
           sudo bash build.sh "$INPUT_URL" "${{ github.repository }}" "xiaomi" "${{ inputs.builder_name }}" "${{ inputs.builder_id }}"
 
       - name: Pack ROM...
