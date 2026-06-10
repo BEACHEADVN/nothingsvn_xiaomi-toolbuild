@@ -5,7 +5,7 @@ on:
     inputs:
       input_url:
         description: 'URL of the ROM to build'
-        required: true
+        required: false
       builder_name:
         description: 'Tên người build'
         required: false
