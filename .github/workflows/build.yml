@@ -219,11 +219,17 @@ jobs:
           echo "🚀 Khởi chạy build với URL: $INPUT_URL"
           export PATH="$GITHUB_WORKSPACE/android-sdk/build-tools/34.0.0:$PATH"
           sudo bash build.sh "$INPUT_URL" "${{ github.repository }}" "xiaomi" "${{ inputs.builder_name }}" "${{ inputs.builder_id }}"
+          echo "THÔNG TIN THƯ MỤC"
+          $pwd
+          ls
 
       - name: Pack ROM...
         run: |
           # 1. Chạy script pack gốc của bạn trước
           sudo bash packROM.sh
+          echo "THÔNG TIN THƯ MỤC"
+          $pwd
+          ls
 
           # 2. Lấy short SHA của commit hiện tại (7 ký tự)
           COMMIT_SHA=$(git rev-parse --short=7 HEAD)
