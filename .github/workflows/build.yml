@@ -223,14 +223,28 @@ jobs:
           $pwd
           ls
           echo "🧹 Đang tiến hành xóa file ROM gốc để giải phóng dung lượng đĩa..."
-          if [ -n "$ORIGINAL_ROM_NAME" ] && [ -f "$ORIGINAL_ROM_NAME" ]; then
-            sudo rm -f "$ORIGINAL_ROM_NAME"
-            echo "✅ Đã xóa file ROM gốc: $ORIGINAL_ROM_NAME"
+          # =========================================================
+          ROM_TXT="$GITHUB_WORKSPACE/bin/ddevice/downloaded_rom_name.txt"
+          
+          if [ -f "$ROM_TXT" ]; then
+            # Đọc tên file thực tế từ file text tạm và nạp vào GITHUB_ENV toàn cục
+            DETECTED_ROM=$(cat "$ROM_TXT")
+            echo "ORIGINAL_ROM_NAME=$DETECTED_ROM" >> $GITHUB_ENV
+            echo "🔍 Đã nhận diện tên file ROM: $DETECTED_ROM"
+            
+            # Tiến hành xóa file zip gốc để giải phóng đĩa
+            if [ -f "$DETECTED_ROM" ]; then
+              sudo rm -f "$DETECTED_ROM"
+              echo "✅ Đã xóa file ROM gốc thành công."
+            fi
           else
-            # Phương án dự phòng nếu biến môi trường chưa nhận, quét theo định dạng file
+            # Phương án dự phòng nếu không tìm thấy file text tạm
+            echo "⚠️ Cảnh báo: Không tìm thấy file lưu tên ROM tạm thời. Quét thủ công..."
             sudo rm -f *-ota_full-*.zip 2>/dev/null
-            echo "✅ Đã dọn dẹp các file ROM zip gốc."
           fi
+          echo "THÔNG TIN THƯ MỤC"
+          $pwd
+          ls
 
       - name: Pack ROM...
         run: |
