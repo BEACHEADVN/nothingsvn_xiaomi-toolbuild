@@ -229,43 +229,52 @@ jobs:
           sudo apt-get install -y p7zip-full jq curl
 
       # ===== CHIA NHỎ FILE NẾU > 9GB =====
+      # ===== CHIA NHỎ FILE REPACK NẾU > 9GB =====
       - name: Split Large File
         id: split
         run: |
-          FILE="${{ env.ROM_FILE }}"
+          # Tự động tìm file .zip thành phẩm trong thư mục out/
+          REPACK_FILE=$(ls out/*.zip | head -n 1)
           
-          if [ -z "$FILE" ]; then
-            echo "❌ Không tìm thấy tên file ROM hợp lệ từ bước Fetch!"
+          if [ -z "$REPACK_FILE" ] || [ ! -f "$REPACK_FILE" ]; then
+            echo "❌ Không tìm thấy file ROM thành phẩm trong thư mục out/"
             exit 1
           fi
 
-          echo "File ROM gốc dự kiến xử lý: $FILE"
-          SIZE=$(sudo stat -c%s "$FILE")
+          echo "ROM_TARGET=$REPACK_FILE" >> $GITHUB_ENV
+          echo "ROM_NAME=$(basename "$REPACK_FILE")" >> $GITHUB_ENV
+          echo "File ROM Repack thực tế sẽ xử lý: $REPACK_FILE"
+          
+          SIZE=$(sudo stat -c%s "$REPACK_FILE")
           LIMIT=$((9 * 1024 * 1024 * 1024))
       
           if [ "$SIZE" -gt "$LIMIT" ]; then
             echo "File > 9GB, đang chia nhỏ bằng 7z..."
-            sudo 7z a -t7z -mx=0 -v9g "${FILE}.7z" "$FILE"
+            # Cắt trực tiếp file trong out/ và để các mảnh .7z ở thư mục gốc để dễ upload
+            sudo 7z a -t7z -mx=0 -v9g "$(basename "$REPACK_FILE").7z" "$REPACK_FILE"
             echo "split=true" >> $GITHUB_OUTPUT
           else
             echo "File <= 9GB, giữ nguyên khối."
             echo "split=false" >> $GITHUB_OUTPUT
           fi
 
-      # ===== UPLOAD PIXELDRAIN =====
+      # ===== UPLOAD FILE REPACK LÊN PIXELDRAIN =====
       - name: Upload to Pixeldrain
         id: pd
         env:
           PD_API_KEY: ${{ secrets.PIXELDRAIN_API_KEY }}
         run: |
-          FILE="${{ env.ROM_FILE }}"
+          FILE_PATH="${{ env.ROM_TARGET }}"
+          FILE_NAME="${{ env.ROM_NAME }}"
 
           if [ "${{ steps.split.outputs.split }}" = "true" ]; then
             IDS=""
             LINKS=""
             COUNT=1
 
-            for PART in *.7z.*; do
+            # Quét các mảnh cắt .7z.001, .7z.002 vừa tạo ở thư mục gốc
+            for PART in "$FILE_NAME".7z.*; do
+              [ -e "$PART" ] || continue
               echo "Uploading part: $PART"
               RESPONSE=$(curl -s -u ":$PD_API_KEY" \
                 -F "file=@${PART}" \
@@ -291,8 +300,9 @@ jobs:
             echo "links=$LINKS" >> $GITHUB_OUTPUT
 
           else
+            echo "Uploading single file: $FILE_PATH"
             RESPONSE=$(curl -s -u ":$PD_API_KEY" \
-              -F "file=@${FILE}" \
+              -F "file=@${FILE_PATH}" \
               https://pixeldrain.com/api/file)
 
             ID=$(echo "$RESPONSE" | jq -r '.id')
@@ -305,16 +315,16 @@ jobs:
             echo "links=<a href='https://pixeldrain.com/u/$ID'>Download</a>" >> $GITHUB_OUTPUT
           fi
 
-      # ===== TELEGRAM NOTIFY =====
+      # ===== TELEGRAM NOTIFY REPACK =====
       - name: Notification to Telegram
         run: |
-          FILE="${{ env.ROM_FILE }}"
+          FILE="${{ env.ROM_NAME }}"
           LINKS="${{ steps.pd.outputs.links }}"
           DEVICE="${{ matrix.device }}"
           REGION="${{ matrix.region }}"
 
           TEXT=$(cat << EOF
-          <b>🚀 New Xiaomi [${DEVICE^^} - ${REGION}] ROM Built Successfully!</b>
+          <b>🚀 New Repack Xiaomi [${DEVICE^^} - ${REGION}] ROM Built Successfully!</b>
 
           📦 <code>${FILE}</code>
 
