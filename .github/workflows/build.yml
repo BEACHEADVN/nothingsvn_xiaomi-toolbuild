@@ -222,6 +222,15 @@ jobs:
           echo "THÔNG TIN THƯ MỤC"
           $pwd
           ls
+          echo "🧹 Đang tiến hành xóa file ROM gốc để giải phóng dung lượng đĩa..."
+          if [ -n "$ORIGINAL_ROM_NAME" ] && [ -f "$ORIGINAL_ROM_NAME" ]; then
+            sudo rm -f "$ORIGINAL_ROM_NAME"
+            echo "✅ Đã xóa file ROM gốc: $ORIGINAL_ROM_NAME"
+          else
+            # Phương án dự phòng nếu biến môi trường chưa nhận, quét theo định dạng file
+            sudo rm -f *-ota_full-*.zip 2>/dev/null
+            echo "✅ Đã dọn dẹp các file ROM zip gốc."
+          fi
 
       - name: Pack ROM...
         run: |
