@@ -133,11 +133,6 @@ jobs:
           sudo ln -sf "$(pwd)/android-sdk/build-tools/34.0.0/zipalign" /usr/local/bin/zipalign
           sudo ln -sf "$(pwd)/android-sdk/build-tools/34.0.0/aapt" /usr/local/bin/aapt
 
-
-      - name: Start Notify
-        run: |
-          python notify.py start "${{ github.repository }}" "${{ inputs.input_url }}" "xiaomi" "${{ inputs.builder_name }}" "${{ inputs.builder_id }}"
-        
       - name: Giving permission
         run: |
           sudo chmod 777 -R *
@@ -227,7 +222,39 @@ jobs:
 
       - name: Pack ROM...
         run: |
+          # 1. Chạy script pack gốc của bạn trước
           sudo bash packROM.sh
+
+          # 2. Lấy short SHA của commit hiện tại (7 ký tự)
+          COMMIT_SHA=$(git rev-parse --short=7 HEAD)
+          echo "Commit SHA ngắn: $COMMIT_SHA"
+
+          # 3. Tìm file zip gốc vừa được tạo ra (dạng *-ota_full-*.zip)
+          ORIGINAL_FILE=$(ls *-ota_full-*.zip 2>/dev/null | head -n 1)
+
+          if [ -z "$ORIGINAL_FILE" ]; then
+            echo "❌ Không tìm thấy file ROM gốc sau khi pack!"
+            exit 1
+          fi
+
+          echo "Tìm thấy file ROM gốc: $ORIGINAL_FILE"
+
+          # 4. Tách các thành phần bằng dấu gạch ngang (-)
+          # Gốc: socrates-ota_full-OS3.0.303.0.WMKCNXM-user-16.0-f09aed2004.zip
+          DEVICE=$(echo "$ORIGINAL_FILE" | cut -d'-' -f1)
+          FULL_VERSION=$(echo "$ORIGINAL_FILE" | cut -d'-' -f3) # Giữ nguyên OS3.0.303.0.WMKCNXM
+          ANDROID_VER=$(echo "$ORIGINAL_FILE" | cut -d'-' -f5)  # 16.0
+
+          # 5. Tạo tên mới theo cấu trúc: NothingsVN-device-version_gốc-android_version-commit.zip
+          NEW_NAME="NothingsVN-${DEVICE}-${FULL_VERSION}-${ANDROID_VER}-${COMMIT_SHA}.zip"
+          echo "Tên ROM mới dự kiến: $NEW_NAME"
+
+          # 6. Tiến hành đổi tên file thực tế
+          sudo mv "$ORIGINAL_FILE" "$NEW_NAME"
+          echo "✅ Đã đổi tên file thành công!"
+
+          # 7. Ghi đè lại biến môi trường ROM_FILE trong GITHUB_ENV cho các bước sau sử dụng
+          echo "ROM_FILE=$NEW_NAME" >> $GITHUB_ENV
 
       - name: Install 7zip & Jq
         run: |
