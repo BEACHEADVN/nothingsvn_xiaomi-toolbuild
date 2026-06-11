@@ -315,8 +315,8 @@ jobs:
       # ===== TELEGRAM NOTIFY =====
       - name: Notification to Telegram
         env:
-          BOT_TOKEN: ${{ secrets.TG_TOKEN }}
-          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           FILE="${{ env.ROM_FILE }}"
           LINKS="${{ steps.pd.outputs.links }}"
@@ -333,7 +333,7 @@ jobs:
           )
 
           curl -s -X POST \
-            "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
-            --data-urlencode "chat_id=${CHAT_ID}" \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
             --data-urlencode "text=${TEXT}" \
             --data-urlencode "parse_mode=HTML"
