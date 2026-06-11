@@ -214,7 +214,6 @@ jobs:
           
       - name: Build ROM...
         env:
-          # Ưu tiên link nhập thủ công (inputs), nếu trống sẽ tự lấy link cào tự động (env)
           INPUT_URL: ${{ inputs.input_url || env.AUTO_INPUT_URL }}
         run: |
           if [ -z "$INPUT_URL" ]; then
@@ -314,9 +313,6 @@ jobs:
 
       # ===== TELEGRAM NOTIFY =====
       - name: Notification to Telegram
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
         run: |
           FILE="${{ env.ROM_FILE }}"
           LINKS="${{ steps.pd.outputs.links }}"
