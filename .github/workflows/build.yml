@@ -256,6 +256,30 @@ jobs:
           # 7. Ghi đè lại biến môi trường ROM_FILE trong GITHUB_ENV cho các bước sau sử dụng
           echo "ROM_FILE=$NEW_NAME" >> $GITHUB_ENV
 
+          # =========================================================
+          echo "📂 Đang tiến hành giải nén thử nghiệm file ROM: $NEW_NAME"
+          
+          # Tạo một thư mục tạm để giải nén vào, tránh làm bẩn thư mục gốc
+          mkdir -p extracted_rom
+          unzip -q "$NEW_NAME" -d extracted_rom
+
+          echo "📋 Danh sách các file và thư mục bên trong ROM (Cấp độ 1 & 2):"
+          if command -v tree >/dev/null 2>&1; then
+            # Nếu có lệnh tree thì hiển thị dạng sơ đồ cây cho đẹp
+            tree -L 2 extracted_rom
+          else
+            # Nếu không có tree, liệt kê chi tiết bằng lệnh find trực quan
+            find extracted_rom -maxdepth 2
+          fi
+
+          # (Tùy chọn) Nếu bạn muốn xem danh sách trực tiếp từ file zip mà không cần giải nén ra đĩa:
+          # echo "📋 Danh sách file liệt kê trực tiếp từ file nén ZIP:"
+          # unzip -l "$NEW_NAME"
+
+          # Dọn dẹp thư mục tạm sau khi hiển thị xong để tiết kiệm bộ nhớ build
+          rm -rf extracted_rom
+          echo "🧹 Đã dọn dẹp thư mục giải nén tạm thời."
+
       - name: Install 7zip & Jq
         run: |
           sudo apt-get update
