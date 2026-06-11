@@ -210,7 +210,7 @@ jobs:
 
       - name: Build ROM...
         env:
-          INPUT_URL: ${{ inputs.input_url }}
+          INPUT_URL: ${{ inputs.input_url || env.AUTO_INPUT_URL }}
         run: |
           sudo -E bash build.sh "$INPUT_URL" "${{ github.repository }}" "xiaomi" "${{ inputs.builder_name }}" "${{ inputs.builder_id }}"
 
