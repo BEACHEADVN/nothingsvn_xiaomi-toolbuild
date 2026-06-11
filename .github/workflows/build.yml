@@ -5,7 +5,7 @@ on:
     inputs:
       input_url:
         description: 'URL of the ROM to build'
-        required: true
+        required: false
       builder_name:
         description: 'Tên người build'
         required: false
@@ -16,6 +16,15 @@ on:
 jobs:
   Initialize:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        device: [myron, socrates]
+        region: [China, EEA]
+        exclude:
+          - device: socrates
+            region: EEA
+      fail-fast: false
+    name: Build ROM (${{ matrix.device }} - ${{ matrix.region }})
     env:
       TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
       TELEGRAM_CHANNEL_ID: ${{ secrets.TELEGRAM_CHANNEL_ID }}
@@ -59,6 +68,76 @@ jobs:
       - name: Giving permission
         run: |
           sudo chmod 777 -R *
+
+      - name: Fetch Latest ROM URL
+        id: fetch_rom
+        run: |
+          python3 - <<EOF
+          import requests
+          from bs4 import BeautifulSoup
+          import os
+          import re
+
+          headers = {
+              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+          }
+          
+          target_device = "${{ matrix.device }}"
+          target_region = "${{ matrix.region }}"
+          base_url = "https://hyperosroms.com"
+          model_url = f"{base_url}/model/{target_device}"
+          
+          res = requests.get(model_url, headers=headers, timeout=15)
+          if res.status_code != 200:
+              print(f"❌ Không thể truy cập danh sách ROM thiết bị {target_device} vùng {target_region}")
+              exit(1)
+              
+          soup = BeautifulSoup(res.text, 'html.parser')
+          rows = soup.find_all('tr')
+          sub_page_url = ""
+
+          for row in rows:
+              cells = row.find_all('td')
+              if len(cells) >= 5:
+                  region_text = cells[1].get_text(strip=True)
+                  type_text = cells[2].get_text(strip=True).lower()
+                  
+                  if region_text == target_region and type_text == "recovery":
+                      link_tag = cells[0].find('a') or cells[-1].find('a')
+                      if link_tag and 'href' in link_tag.attrs:
+                          sub_page_url = base_url + link_tag['href'] if link_tag['href'].startswith('/') else link_tag['href']
+                          break
+
+          if not sub_page_url:
+              print(f"❌ Không tìm thấy sub-page ROM phù hợp cho {target_device} ({target_region})")
+              exit(1)
+
+          res_sub = requests.get(sub_page_url, headers=headers, timeout=15)
+          soup_sub = BeautifulSoup(res_sub.text, 'html.parser')
+          
+          package_name = ""
+          for li in soup_sub.find_all(['li', 'p']):
+              text = li.get_text()
+              if "Package Name:" in text:
+                  package_name = text.split("Package Name:")[-1].strip()
+                  break
+                  
+          if not package_name:
+              match = re.search(r'([\w-]+\.zip)', res_sub.text)
+              if match:
+                  package_name = match.group(1)
+
+          if not package_name:
+              print(f"❌ Không tìm thấy tên gói ZIP hợp lệ cho {target_device}")
+              exit(1)
+
+          version_code = sub_page_url.split('/')[-1]
+          high_speed_url = f"https://bkt-sgp-miui-ota-update-alisgp.oss-ap-southeast-1.aliyuncs.com/{version_code}/{package_name}"
+          
+          with open(os.environ['GITHUB_ENV'], 'a') as f:
+              f.write(f"AUTO_INPUT_URL={high_speed_url}\n")
+              f.write(f"ROM_FILE={package_name}\n")
+          EOF
 
       - name: Build ROM...
         env:
