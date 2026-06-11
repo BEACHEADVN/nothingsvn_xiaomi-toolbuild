@@ -100,4 +100,4 @@ echo $device_code > $work_dir/bin/ddevice/device_code.txt
 echo $DEVICE_TYPE > $work_dir/bin/ddevice/device_type.txt
 echo $ROM_OS > $work_dir/bin/ddevice/rom_os.txt
 
-
+echo "ORIGINAL_ROM_NAME=${baserom}" >> $GITHUB_ENV
