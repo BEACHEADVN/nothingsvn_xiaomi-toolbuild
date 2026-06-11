@@ -73,28 +73,3 @@ repack "Output: "
 repack "$(pwd)/out/${os_type}_${polyxver}_${device_code}_${base_rom_code}_${hash}_${status}.zip"
 upload "Uploading"
 output_file="out/${os_type}_${polyxver}_${device_code}_${base_rom_code}_${hash}_${status}.zip"
-
-if [[ $rom_os == "MIUI" ]];then
-    uploaddir="MIUI"
-else
-    uploaddir="HyperOS"
-fi
-
-# 1drive
-if [[ $rom_os == "MIUI" ]]; then
-    rclone -v --config="$RCLONE_CONFIG_1DRIVE" copy "$output_file" "$ONEDRIVE_REMOTE:NTBuild/${uploaddir}/${polyxver}/${device_code}/" || {
-        upload "Error uploading file to OneDrive: $FILENAME"
-        exit 1
-    }
-else
-    rclone -v --config="$RCLONE_CONFIG_1DRIVE" copy "$output_file" "$ONEDRIVE_REMOTE:NTBuild/${uploaddir}/${polyxver}/${device_code}/" || {
-        upload "Error uploading file to OneDrive: $FILENAME"
-        exit 1
-    }
-fi  
-
-upload "Clean Workflow.."
-rm -rf $work_dir/out
-rm -rf $work_dir/build
-
-upload "Build ${os_type}_${polyxver} for ${device_code} successfull!"
