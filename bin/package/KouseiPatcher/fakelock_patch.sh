@@ -4,8 +4,19 @@
 work_dir=$(pwd)
 magiskboot="$work_dir/bin/magiskboot"
 prop="$work_dir/bin/package/KouseiPatcher/prop"
+SEARCH_DIR="build/baserom/images"
+BUILD_PROP=$(find "$SEARCH_DIR" -type f -name "build.prop" | head -n 1)
+first_api=$(grep "ro.product.first_api_level" "$BUILD_PROP" | awk 'NR==1' | cut -d '=' -f 2 | tr -d ' \r')
 
-if [ -f $work_dir/build/baserom/images/vendor_boot.img ]; then 
+if [ "$first_api" -lt 33 ]; then
+    mods "API lower than 33!Inject XEUToolbox by Xiaomi.eu"
+    echo "/system_ext/xbin/xeu_toolbox  u:object_r:toolbox_exec:s0" >> build/baserom/images/config/system_ext_file_contexts
+    echo "/system_ext/xbin/xeu_toolbox  u:object_r:toolbox_exec:s0" >> build/baserom/images/system_ext/etc/selinux/system_ext_file_contexts
+    echo "(allow init toolbox_exec (file ((execute_no_trans))))" >> build/baserom/images/system_ext/etc/selinux/system_ext_sepolicy.cil
+    cp -rf $work_dir/bin/package/KouseiPatcher/bin/xeu_toolbox/* $work_dir/build/baserom/images/system_ext
+    mods "Done!"
+else
+  if [ -f $work_dir/build/baserom/images/vendor_boot.img ]; then 
 
   echo "[IMGPATCH] - PATCHING vendor_boot.img"
   mkdir -p $work_dir/temp_boot
@@ -36,10 +47,11 @@ if [ -f $work_dir/build/baserom/images/vendor_boot.img ]; then
     rm -rf $work_dir/temp_boot
   fi
 
+  fi
 fi
 
 cat $prop/build.prop >> $work_dir/build/baserom/images/system/system/build.prop
-if [[ $sdkLevel == "32" || $sdkLevel == "31" ]];then
+if [[ $sdkLevel -lt "32" ]];then
 cat $prop/cust.prop >> $work_dir/build/baserom/images/system/system/etc/cust/cust_prop_white_keys_list
 else
 cat $prop/cust.prop >> $work_dir/build/baserom/images/system_ext/etc/cust_prop_white_keys_list
