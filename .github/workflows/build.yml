@@ -238,7 +238,7 @@ jobs:
       # ===== TELEGRAM NOTIFY =====
       - name: Notification to Telegram
         env:
-          BOT_TOKEN: ${{ secrets.TG_TOKEN }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
           FILE="${{ env.ROM_FILE }}"
